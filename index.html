@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Qwinto Score Sheet</title>
+  <style>
+    :root {
+      --bg-black: #000000;
+      --surface-dark: #111215;
+      --surface-elevated: #1c1e24;
+      --border-subtle: #2a2d36;
+      --red-bar: #e63926;
+      --red-border: #ff6959;
+      --yellow-bar: #e8b007;
+      --yellow-border: #ffd24c;
+      --purple-bar: #844cf5;
+      --purple-border: #ad85ff;
+      --bonus-mint: #c6fced;
+      --cell-border: #8d939e;
+      --text-main: #ffffff;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      gap: 6px;
+    }
+
+    /* Thanh gợi ý xoay ngang gọn nhẹ (chỉ hiện khi màn hình dọc và có thể tắt) */
+    .portrait-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #1a1608;
+      border: 1px solid #5c4810;
+      color: #fcd34d;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    @media (orientation: portrait) and (max-width: 768px) {
+      .portrait-banner.visible {
+        display: flex;
+      }
+    }
+
+    .portrait-close {
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: #fcd34d;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Header tối giản */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 6px 12px;
+      flex-shrink: 0;
+      min-height: 44px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-dots {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand-dots span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-black);
+    }
+
+    .brand-dots span:nth-child(1) { background: var(--red-bar); }
+    .brand-dots span:nth-child(2) { background: var(--yellow-bar); margin-left: -4px; }
+    .brand-dots span:nth-child(3) { background: var(--purple-bar); margin-left: -4px; }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+
+    .game-over-badge {
+      display: none;
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .game-over-badge.show {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action {
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-elevated);
+      color: #e5e7eb;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-action:active {
+      transform: scale(0.95);
+    }
+
+    .btn-action:disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .btn-reset {
+      background: rgba(230, 57, 38, 0.16);
+      border-color: rgba(230, 57, 38, 0.45);
+      color: #fca5a5;
+    }
+
+    .total-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e2028;
+      border: 1px solid #3f4454;
+      padding: 4px 11px;
+      border-radius: 11px;
+      margin-left: 2px;
+    }
+
+    .total-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .total-value {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fbbf24;
+      line-height: 1;
+    }
+
+    /* Khu vực bàn chơi trung tâm - căn giữa hoàn hảo */
+    .board-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /*
+     * Khung 3 dải màu tính toán tỷ lệ khung hình 12 cột x 3 hàng
+     * Giúp tự co giãn mượt mà theo cả chiều rộng lẫn chiều cao của màn hình ngang điện thoại
+     */
+    .board-wrapper {
+      width: min(100%, calc((100dvh - 114px) * 3.55), 940px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 1.8dvh, 14px);
+    }
+
+    /* Lưới 12 cột đồng nhất tuyệt đối giúp thẳng hàng dọc 100% giữa 3 hàng */
+    .qwinto-row-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: center;
+      width: 100%;
+    }
+
+    /* Thanh dải màu chiếm đúng 10 cột liên tiếp trên lưới 12 cột */
+    .color-strip {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: clamp(4px, 0.8vw, 10px);
+      padding: clamp(5px, 1.1dvh, 9px) clamp(6px, 0.9vw, 11px);
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+    }
+
+    .strip-red {
+      grid-column: 3 / 13; /* Cột index 2..11 */
+      background-color: var(--red-bar);
+      border: 1.5px solid var(--red-border);
+    }
+
+    .strip-yellow {
+      grid-column: 2 / 12; /* Cột index 1..10 */
+      background-color: var(--yellow-bar);
+      border: 1.5px solid var(--yellow-border);
+    }
+
+    .strip-purple {
+      grid-column: 1 / 11; /* Cột index 0..9 */
+      background-color: var(--purple-bar);
+      border: 1.5px solid var(--purple-border);
+    }
+
+    /* Ô khoảng trống liền mạch nằm trong dải màu */
+    .strip-gap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      pointer-events: none;
+    }
+
+    /* Ô bấm ghi số */
+    .cell-btn {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: clamp(15px, min(2.7vw, 4.4dvh), 26px);
+      line-height: 1;
+      color: #0f172a;
+      border: 2px solid var(--cell-border);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+      padding: 0;
+    }
+
+    .cell-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* Ô thường hình tròn trắng */
+    .cell-circle {
+      border-radius: 9999px;
+      background-color: #ffffff;
+    }
+
+    /* Ô đặc biệt thưởng cột dọc hình vuông bo nhẹ màu xanh bạc hà */
+    .cell-square {
+      border-radius: 9px;
+      background-color: var(--bonus-mint);
+    }
+
+    .cell-btn.has-value {
+      border-color: #334155;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    /* Footer tối giản */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 6px 12px;
+      flex-shrink: 0;
+      min-height: 44px;
+    }
+
+    .misthrows-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .misthrows-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .misthrows-boxes {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .misthrow-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid #374151;
+      background: #181a20;
+      color: transparent;
+      font-size: 14px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .misthrow-btn:active {
+      transform: scale(0.9);
+    }
+
+    .misthrow-btn.checked {
+      background: #dc2626;
+      border-color: #f87171;
+      color: #ffffff;
+    }
+
+    .scores-breakdown {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .score-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .score-chip span:last-child {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .chip-red {
+      background: rgba(230, 57, 38, 0.16);
+      border-color: rgba(230, 57, 38, 0.45);
+      color: #fca5a5;
+    }
+
+    .chip-yellow {
+      background: rgba(232, 176, 7, 0.16);
+      border-color: rgba(232, 176, 7, 0.45);
+      color: #fde047;
+    }
+
+    .chip-purple {
+      background: rgba(132, 76, 245, 0.18);
+      border-color: rgba(132, 76, 245, 0.5);
+      color: #d8b4fe;
+    }
+
+    .chip-bonus {
+      background: rgba(198, 252, 237, 0.14);
+      border-color: rgba(198, 252, 237, 0.4);
+      color: #a7f3d0;
+    }
+
+    .chip-penalty {
+      background: rgba(220, 38, 38, 0.14);
+      border-color: rgba(220, 38, 38, 0.4);
+      color: #f87171;
+    }
+
+    /* Modal chung */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(3px);
+      padding: 12px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.93); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 440px;
+      background: #16181f;
+      border: 1px solid #323644;
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      animation: modalPop 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid #272a35;
+    }
+
+    .modal-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .row-indicator {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .modal-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .modal-close-x {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: #252834;
+      color: #d1d5db;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-body {
+      padding: 12px 14px;
+    }
+
+    /* Lưới chọn số 1-18 (6 cột x 3 hàng gọn đẹp cho màn ngang) */
+    .numbers-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .num-choice-btn {
+      height: 40px;
+      border-radius: 11px;
+      border: 1.5px solid #373c4d;
+      background: #222530;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.08s ease, background-color 0.12s ease;
+    }
+
+    .num-choice-btn:active:not(:disabled) {
+      transform: scale(0.92);
+    }
+
+    /* Màu nhấn theo hàng đang chọn */
+    .theme-red .num-choice-btn:not(:disabled) {
+      background: rgba(230, 57, 38, 0.22);
+      border-color: rgba(230, 57, 38, 0.65);
+      color: #fee2e2;
+    }
+    .theme-yellow .num-choice-btn:not(:disabled) {
+      background: rgba(232, 176, 7, 0.22);
+      border-color: rgba(232, 176, 7, 0.65);
+      color: #fef9c3;
+    }
+    .theme-purple .num-choice-btn:not(:disabled) {
+      background: rgba(132, 76, 245, 0.24);
+      border-color: rgba(132, 76, 245, 0.7);
+      color: #f3e8ff;
+    }
+
+    /* Số đang được chọn sẵn ở ô đó */
+    .num-choice-btn.selected {
+      background: #ffffff !important;
+      border-color: #ffffff !important;
+      color: #090d16 !important;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
+
+    /* Số không hợp lệ theo luật Qwinto */
+    .num-choice-btn:disabled {
+      opacity: 0.22;
+      background: #14161c;
+      border-color: #232630;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #272a35;
+    }
+
+    .btn-clear-cell {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.16);
+      color: #fca5a5;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-clear-cell.hidden {
+      display: none;
+    }
+
+    .btn-close-modal {
+      margin-left: auto;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #2b2f3d;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Modal xác nhận ván mới */
+    .confirm-card {
+      max-width: 310px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .confirm-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .confirm-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-confirm-cancel {
+      padding: 9px;
+      border-radius: 10px;
+      border: none;
+      background: #272a36;
+      color: #e5e7eb;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-confirm-ok {
+      padding: 9px;
+      border-radius: 10px;
+      border: none;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Thông báo nhỏ gợi ý xoay ngang khi cầm dọc điện thoại -->
+  <div id="portraitBanner" class="portrait-banner visible">
+    <span>📱 Xoay ngang điện thoại (Landscape) để chơi thoải mái nhất</span>
+    <button id="dismissPortraitBtn" type="button" class="portrait-close">Ẩn</button>
+  </div>
+
+  <!-- Thanh tiêu đề trên cùng -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <span class="brand-title">QWINTO</span>
+      <span id="gameOverBadge" class="game-over-badge">🏁 Kết thúc ván</span>
+    </div>
+
+    <div class="header-actions">
+      <button id="undoBtn" type="button" class="btn-action" disabled>Hoàn tác</button>
+      <button id="resetBtn" type="button" class="btn-action btn-reset">Ván mới</button>
+      <div class="total-pill">
+        <span class="total-label">Tổng</span>
+        <span id="headerTotalScore" class="total-value">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bàn chơi trung tâm 3 dải màu xếp lệch bậc thang -->
+  <main class="board-stage">
+    <div id="boardWrapper" class="board-wrapper" aria-label="Bảng điểm Qwinto">
+      <!-- Render tự động bằng JavaScript -->
+    </div>
+  </main>
+
+  <!-- Thanh tổng kết điểm & Gieo hỏng dưới cùng -->
+  <footer class="bottom-bar">
+    <div class="misthrows-group">
+      <span class="misthrows-label">Gieo hỏng (-5):</span>
+      <div id="misthrowsContainer" class="misthrows-boxes">
+        <!-- 4 nút X render bằng JS -->
+      </div>
+    </div>
+
+    <div class="scores-breakdown">
+      <div class="score-chip chip-red">
+        <span>Đỏ</span>
+        <span id="scoreRed">0</span>
+      </div>
+      <div class="score-chip chip-yellow">
+        <span>Vàng</span>
+        <span id="scoreYellow">0</span>
+      </div>
+      <div class="score-chip chip-purple">
+        <span>Tím</span>
+        <span id="scorePurple">0</span>
+      </div>
+      <div class="score-chip chip-bonus">
+        <span>Thưởng</span>
+        <span id="scoreBonus">0</span>
+      </div>
+      <div class="score-chip chip-penalty">
+        <span>Trừ</span>
+        <span id="scorePenalty">0</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal chọn số 1 - 18 -->
+  <div id="numberPickerModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+    <div id="pickerModalCard" class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="pickerRowDot" class="row-indicator"></span>
+          <div>
+            <div id="pickerTitle" class="modal-title">Hàng Đỏ</div>
+            <div id="pickerHint" class="modal-sub">Chọn số hợp lệ (1–18)</div>
+          </div>
+        </div>
+        <button id="closePickerBtn" type="button" class="modal-close-x" aria-label="Đóng">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="pickerNumbersGrid" class="numbers-grid">
+          <!-- Render 18 nút số 1..18 -->
+        </div>
+
+        <div class="modal-footer">
+          <button id="clearCellBtn" type="button" class="btn-clear-cell hidden">Xóa số</button>
+          <button id="cancelPickerBtn" type="button" class="btn-close-modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal xác nhận Ván mới -->
+  <div id="confirmResetModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-card confirm-card">
+      <div class="confirm-title">Bắt đầu ván mới?</div>
+      <div class="confirm-desc">Toàn bộ số đã điền và điểm số hiện tại sẽ được xóa sạch.</div>
+      <div class="confirm-actions">
+        <button id="cancelResetBtn" type="button" class="btn-confirm-cancel">Hủy</button>
+        <button id="confirmResetBtn" type="button" class="btn-confirm-ok">Đồng ý</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Cấu hình chuẩn 3 dải màu Qwinto trên lưới 12 cột (chỉ số cột 0 -> 11):
+     * - Dải 1 (Đỏ): Cột 2..11 (10 slot), trống tại cột 5, ô vuông thưởng tại cột 3 và 7.
+     * - Dải 2 (Vàng): Cột 1..10 (10 slot), trống tại cột 6, ô vuông thưởng tại cột 8.
+     * - Dải 3 (Tím): Cột 0..9 (10 slot), trống tại cột 4, ô vuông thưởng tại cột 2 và 9.
+     */
+    const ROWS_CONFIG = [
+      {
+        id: 'red',
+        name: 'Đỏ',
+        stripClass: 'strip-red',
+        themeClass: 'theme-red',
+        dotColor: '#e63926',
+        startCol: 2,
+        endCol: 11,
+        skippedCol: 5,
+        bonusSquareCols: [3, 7]
+      },
+      {
+        id: 'yellow',
+        name: 'Vàng',
+        stripClass: 'strip-yellow',
+        themeClass: 'theme-yellow',
+        dotColor: '#e8b007',
+        startCol: 1,
+        endCol: 10,
+        skippedCol: 6,
+        bonusSquareCols: [8]
+      },
+      {
+        id: 'purple',
+        name: 'Tím',
+        stripClass: 'strip-purple',
+        themeClass: 'theme-purple',
+        dotColor: '#844cf5',
+        startCol: 0,
+        endCol: 9,
+        skippedCol: 4,
+        bonusSquareCols: [2, 9]
+      }
+    ];
+
+    // 5 cột dọc thưởng điểm: khi cả 3 hàng đều điền đủ số ở cột đó -> cộng giá trị tại ô vuông thưởng
+    const BONUS_COLUMNS = [
+      { col: 2, rowId: 'purple' },
+      { col: 3, rowId: 'red' },
+      { col: 7, rowId: 'red' },
+      { col: 8, rowId: 'yellow' },
+      { col: 9, rowId: 'purple' }
+    ];
+
+    const STORAGE_KEY = 'qwinto_scoresheet_state_v3';
+
+    let state = {
+      values: { red: {}, yellow: {}, purple: {} },
+      misthrows: [false, false, false, false]
+    };
+
+    let historyStack = [];
+    let activeCell = null;
+
+    /**
+     * Tải trạng thái từ localStorage an toàn (không lỗi khi dùng tab ẩn danh)
+     */
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.values) {
+          state.values = {
+            red: parsed.values.red || {},
+            yellow: parsed.values.yellow || {},
+            purple: parsed.values.purple || {}
+          };
+        }
+        if (Array.isArray(parsed.misthrows) && parsed.misthrows.length === 4) {
+          state.misthrows = parsed.misthrows.map(Boolean);
+        }
+      } catch (err) {
+        // Bỏ qua lỗi lưu trữ nếu trình duyệt chặn storage
+      }
+    }
+
+    /**
+     * Lưu trạng thái vào localStorage
+     */
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        // Bỏ qua lỗi lưu trữ
+      }
+    }
+
+    /**
+     * Lưu lịch sử để Hoàn tác (Undo)
+     */
+    function pushHistory() {
+      historyStack.push(JSON.stringify(state));
+      if (historyStack.length > 50) {
+        historyStack.shift();
+      }
+    }
+
+    /**
+     * Kiểm tra một số (1..18) có hợp lệ để điền vào (rowId, col) theo luật Qwinto hay không:
+     * 1. Trong cùng hàng ngang: phải lớn hơn mọi số bên trái và nhỏ hơn mọi số bên phải.
+     * 2. Trong cùng cột dọc (cùng chỉ số col): không được trùng với số đã điền ở 2 hàng còn lại.
+     */
+    function isNumberValidForCell(rowId, col, num) {
+      const rowConfig = ROWS_CONFIG.find(r => r.id === rowId);
+      if (!rowConfig) return false;
+
+      // Luật hàng ngang: tăng dần nghiêm ngặt từ trái sang phải
+      for (let c = rowConfig.startCol; c <= rowConfig.endCol; c++) {
+        if (c === rowConfig.skippedCol || c === col) continue;
+        const val = state.values[rowId][c];
+        if (typeof val === 'number') {
+          if (c < col && num <= val) return false;
+          if (c > col && num >= val) return false;
+        }
+      }
+
+      // Luật cột dọc: không trùng số ở các hàng khác trong cùng cột col
+      for (const otherRow of ROWS_CONFIG) {
+        if (otherRow.id === rowId) continue;
+        const otherVal = state.values[otherRow.id][col];
+        if (typeof otherVal === 'number' && otherVal === num) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    /**
+     * Render 3 dải màu trên lưới 12 cột căn thẳng hàng dọc tuyệt đối
+     */
+    function renderBoard() {
+      const wrapper = document.getElementById('boardWrapper');
+      wrapper.innerHTML = '';
+
+      ROWS_CONFIG.forEach(row => {
+        const rowGrid = document.createElement('div');
+        rowGrid.className = 'qwinto-row-grid';
+
+        const strip = document.createElement('div');
+        strip.className = `color-strip ${row.stripClass}`;
+
+        for (let col = row.startCol; col <= row.endCol; col++) {
+          if (col === row.skippedCol) {
+            const gap = document.createElement('div');
+            gap.className = 'strip-gap';
+            strip.appendChild(gap);
+            continue;
+          }
+
+          const isSquare = row.bonusSquareCols.includes(col);
+          const val = state.values[row.id][col];
+          const hasVal = typeof val === 'number';
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `cell-btn ${isSquare ? 'cell-square' : 'cell-circle'}${hasVal ? ' has-value' : ''}`;
+          btn.setAttribute('aria-label', `Hàng ${row.name}, cột ${col + 1}${hasVal ? ', giá trị ' + val : ', trống'}`);
+          btn.textContent = hasVal ? String(val) : '';
+
+          btn.addEventListener('click', () => openNumberPicker(row.id, col));
+          strip.appendChild(btn);
+        }
+
+        rowGrid.appendChild(strip);
+        wrapper.appendChild(rowGrid);
+      });
+    }
+
+    /**
+     * Render 4 ô đánh dấu Gieo hỏng (-5 điểm mỗi dấu X)
+     */
+    function renderMisthrows() {
+      const container = document.getElementById('misthrowsContainer');
+      container.innerHTML = '';
+
+      state.misthrows.forEach((isChecked, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `misthrow-btn${isChecked ? ' checked' : ''}`;
+        btn.setAttribute('aria-label', `Gieo hỏng lần ${index + 1}`);
+        btn.setAttribute('aria-pressed', String(isChecked));
+        btn.textContent = '✕';
+
+        btn.addEventListener('click', () => {
+          pushHistory();
+          state.misthrows[index] = !state.misthrows[index];
+          saveState();
+          renderAll();
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    /**
+     * Tính toán điểm số từng phần, tổng điểm và trạng thái kết thúc ván
+     */
+    function calculateAndRenderScores() {
+      let rowsSum = 0;
+      let completedRowsCount = 0;
+
+      ROWS_CONFIG.forEach(row => {
+        const playableCols = [];
+        for (let c = row.startCol; c <= row.endCol; c++) {
+          if (c !== row.skippedCol) playableCols.push(c);
+        }
+
+        const filledCols = playableCols.filter(c => typeof state.values[row.id][c] === 'number');
+        const isFull = filledCols.length === 9;
+        if (isFull) completedRowsCount++;
+
+        const rowScore = isFull ? state.values[row.id][row.endCol] : filledCols.length;
+        rowsSum += rowScore;
+
+        const scoreElId = 'score' + row.id.charAt(0).toUpperCase() + row.id.slice(1);
+        document.getElementById(scoreElId).textContent = String(rowScore);
+      });
+
+      // Tính điểm thưởng 5 cột dọc
+      let bonusSum = 0;
+      BONUS_COLUMNS.forEach(item => {
+        const rVal = state.values.red[item.col];
+        const yVal = state.values.yellow[item.col];
+        const pVal = state.values.purple[item.col];
+
+        if (typeof rVal === 'number' && typeof yVal === 'number' && typeof pVal === 'number') {
+          bonusSum += state.values[item.rowId][item.col];
+        }
+      });
+
+      const misthrowCount = state.misthrows.filter(Boolean).length;
+      const penaltySum = misthrowCount * 5;
+      const grandTotal = rowsSum + bonusSum - penaltySum;
+
+      document.getElementById('scoreBonus').textContent = String(bonusSum);
+      document.getElementById('scorePenalty').textContent = penaltySum > 0 ? `-${penaltySum}` : '0';
+      document.getElementById('headerTotalScore').textContent = String(grandTotal);
+
+      // Kiểm tra điều kiện kết thúc ván: có >= 2 hàng kín 9/9 ô hoặc đủ 4 lần gieo hỏng
+      const isGameOver = completedRowsCount >= 2 || misthrowCount >= 4;
+      const badge = document.getElementById('gameOverBadge');
+      if (isGameOver) {
+        badge.classList.add('show');
+      } else {
+        badge.classList.remove('show');
+      }
+    }
+
+    /**
+     * Mở modal chọn số (hiển thị đủ 1-18, sáng số hợp lệ, mờ vô hiệu hóa số không hợp lệ)
+     */
+    function openNumberPicker(rowId, col) {
+      activeCell = { rowId, col };
+      const rowConfig = ROWS_CONFIG.find(r => r.id === rowId);
+      const currentVal = state.values[rowId][col];
+
+      const modalCard = document.getElementById('pickerModalCard');
+      modalCard.className = `modal-card ${rowConfig.themeClass}`;
+
+      document.getElementById('pickerRowDot').style.backgroundColor = rowConfig.dotColor;
+      document.getElementById('pickerTitle').textContent = `Hàng ${rowConfig.name}`;
+
+      const grid = document.getElementById('pickerNumbersGrid');
+      grid.innerHTML = '';
+
+      let validCount = 0;
+
+      for (let num = 1; num <= 18; num++) {
+        const isSelected = currentVal === num;
+        const isValid = isNumberValidForCell(rowId, col, num);
+        if (isValid) validCount++;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `num-choice-btn${isSelected ? ' selected' : ''}`;
+        btn.textContent = String(num);
+        btn.disabled = !isValid;
+
+        if (isValid) {
+          btn.addEventListener('click', () => {
+            if (state.values[rowId][col] !== num) {
+              pushHistory();
+              state.values[rowId][col] = num;
+              saveState();
+              renderAll();
+            }
+            closeNumberPicker();
+          });
+        }
+
+        grid.appendChild(btn);
+      }
+
+      document.getElementById('pickerHint').textContent =
+        validCount > 0
+          ? `Có ${validCount} số hợp lệ theo luật hàng & cột`
+          : 'Không còn số hợp lệ cho ô này';
+
+      const clearBtn = document.getElementById('clearCellBtn');
+      if (typeof currentVal === 'number') {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      document.getElementById('numberPickerModal').classList.add('open');
+    }
+
+    function closeNumberPicker() {
+      activeCell = null;
+      document.getElementById('numberPickerModal').classList.remove('open');
+    }
+
+    function renderAll() {
+      renderBoard();
+      renderMisthrows();
+      calculateAndRenderScores();
+      document.getElementById('undoBtn').disabled = historyStack.length === 0;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+
+      // Ẩn banner nhắc xoay ngang khi người dùng bấm Ẩn
+      document.getElementById('dismissPortraitBtn').addEventListener('click', () => {
+        document.getElementById('portraitBanner').classList.remove('visible');
+      });
+
+      // Các sự kiện của modal chọn số
+      document.getElementById('closePickerBtn').addEventListener('click', closeNumberPicker);
+      document.getElementById('cancelPickerBtn').addEventListener('click', closeNumberPicker);
+
+      document.getElementById('clearCellBtn').addEventListener('click', () => {
+        if (!activeCell) return;
+        const { rowId, col } = activeCell;
+        if (typeof state.values[rowId][col] === 'number') {
+          pushHistory();
+          delete state.values[rowId][col];
+          saveState();
+          renderAll();
+        }
+        closeNumberPicker();
+      });
+
+      document.getElementById('numberPickerModal').addEventListener('click', (e) => {
+        if (e.target.id === 'numberPickerModal') {
+          closeNumberPicker();
+        }
+      });
+
+      // Hoàn tác
+      document.getElementById('undoBtn').addEventListener('click', () => {
+        if (historyStack.length === 0) return;
+        const prev = historyStack.pop();
+        state = JSON.parse(prev);
+        saveState();
+        renderAll();
+      });
+
+      // Modal xác nhận Ván mới
+      const resetModal = document.getElementById('confirmResetModal');
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        resetModal.classList.add('open');
+      });
+
+      document.getElementById('cancelResetBtn').addEventListener('click', () => {
+        resetModal.classList.remove('open');
+      });
+
+      resetModal.addEventListener('click', (e) => {
+        if (e.target.id === 'confirmResetModal') {
+          resetModal.classList.remove('open');
+        }
+      });
+
+      document.getElementById('confirmResetBtn').addEventListener('click', () => {
+        pushHistory();
+        state.values = { red: {}, yellow: {}, purple: {} };
+        state.misthrows = [false, false, false, false];
+        saveState();
+        renderAll();
+        resetModal.classList.remove('open');
+      });
+
+      renderAll();
+    });
+  </script>
+</body>
+</html>
